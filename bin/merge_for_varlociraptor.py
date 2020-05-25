@@ -1,9 +1,8 @@
+##!/usr/bin/python3
 import os 
 import fnmatch
 import gzip 
 from optparse import OptionParser
-
-
 
 def merge_vcfs(all_vcfs,analysis_dirPath,fout_name):
     """
@@ -16,16 +15,20 @@ def merge_vcfs(all_vcfs,analysis_dirPath,fout_name):
     header_lines=[]
     lines= []
     tags=[]
-
+    format_line = None
     for  file in all_vcfs:
-        file_path = analysis_dirPath + file
+        file_path = analysis_dirPath + '/' + file
         #print(file_path)
         with gzip.open(file_path, 'rt') as fin, open(fout_name , 'w') as merged_file:
             for line in fin:
                     line = line.rstrip()
                     #try to extract INFO/contig tag lines from headers.
                     if  line.startswith('##'):
-                        if line.startswith('##contig') or line.startswith('##INFO')  or  line.startswith('ALT'):
+                        if line.startswith('##fileformat'):
+                            if  format_line is None:
+                                format_line=line
+                                header_lines.append(format_line)
+                        if line.startswith('##contig') or line.startswith('##INFO')  or  line.startswith('ALT') :
                             if line.split('<')[1].split(',')[0] not in tags:
                                 tags.append(line.split('<')[1].split(',')[0])
                                 header_lines.append(line)
@@ -38,16 +41,16 @@ def merge_vcfs(all_vcfs,analysis_dirPath,fout_name):
                         new_line = '\t'.join(cols[0:5])
                         #check if  'SVLEN' is present
                         if  'SVLEN' in cols[7]:
-                            new_line = new_line + '\t' + cols[7]
+                            new_line = new_line + '\t' + '.' + '\t' + '.' + '\t'+ cols[7]
                         else:
-                            new_line =  new_line + '\t' + '.'
+                            new_line =  new_line + '\t' + '.' + '\t' + '.' + '\t' + '.'
                         if new_line not in lines:
                             lines.append(new_line)
             #collect all lines
-            all_lines = header_lines + ['#CHROM\tPOS\tID\tREF\tALT\tINFO'] +  lines
+            all_lines = header_lines + ['#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO'] +  lines
             for line in all_lines:
                 print(line, file= merged_file) #print lines into output file
-    print("Merging vcf files has been done.\n#headers-->{}\n#lines-->{}".format(len(header_lines),len(all_lines)))        
+    print("Merging vcf files has been done.\n#headers-->{}\n#lines-->{}".format(len(header_lines),len(lines)))        
 
     
 
@@ -64,7 +67,7 @@ def main():
     Parser = OptionParser()
     Parser.add_option("--callers", action='store', dest='callers',help="A list of variant callers to be included.")
     Parser.add_option("--output", action='store', dest='output_name', help = "Name of outfile")
-    Parser.add_option("--dir", action='store', dest='analysis_dirPath', help= "Tha PATH of the directory where vcf files locate.\nAccepted pattern for vcf files: *nameofcaller.vcf.gz (e.g. *vardict.vcf.gz)")
+    Parser.add_option("--dir", action='store', dest='analysis_dirPath', help= "The PATH of the directory where vcf files locate.\nAccepted pattern for vcf files: *nameofcaller.vcf.gz (e.g. *vardict.vcf.gz)")
     
 
     #(options, args) = Parser.parse_args()
