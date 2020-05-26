@@ -113,7 +113,7 @@ process posteriorOdds_filtering {
                 set val(smpl_id), file ("${smpl_id}.calls.posteriorFilter.bcf") into callsfiltered_post
     script:
 	"""
-	varlociraptor filter-calls posterior-odds --events SOMATIC_TUMOR --odds strong > ${smpl_id}.calls.posteriorFilter.bcf < ${calls_file} 
+	varlociraptor filter-calls posterior-odds --events SOMATIC_TUMOR --odds strong < ${calls_file} > ${smpl_id}.calls.posteriorFilter.bcf  
 	"""
 	 }
 
